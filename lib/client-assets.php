@@ -177,17 +177,22 @@ function gutenberg_override_style( $handle, $src, $deps = array(), $ver = false,
  * @since 4.5.0
  */
 function gutenberg_register_packages_scripts() {
-	$packages_dependencies = include dirname( __FILE__ ) . '/packages-dependencies.php';
+	foreach ( glob( dirname( dirname( __FILE__ ) ) . '/build/*/index.js' ) as $path ) {
+		// Prefix `wp-` to package directory to get script handle.
+		$handle = 'wp-' . basename( dirname( $package_path ) );
 
-	foreach ( $packages_dependencies as $handle => $dependencies ) {
-		// Remove `wp-` prefix from the handle to get the package's name.
-		$package_name = strpos( $handle, 'wp-' ) === 0 ? substr( $handle, 3 ) : $handle;
-		$path         = "build/$package_name/index.js";
+		// Replace `.js` extension with `.deps.json` to find the generated dependencies file.
+		$dependencies_file = substr( $path, 0, -3 ) . '.deps.json';
+
+		$dependencies = file_exists( $deps_file )
+			? json_decode( file_get_contents( $deps_file ) )
+			: array();
+
 		gutenberg_override_script(
 			$handle,
 			gutenberg_url( $path ),
 			array_merge( $dependencies, array( 'wp-polyfill' ) ),
-			filemtime( gutenberg_dir_path() . $path ),
+			filemtime( $path ),
 			true
 		);
 	}
